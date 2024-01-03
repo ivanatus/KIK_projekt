@@ -22,17 +22,15 @@ from deep_sort_pytorch.deep_sort import DeepSort
 from collections import deque
 import numpy as np
 
-#import deep_sort_pytorch
 import sys
 import os
-linux_path = os.path.expanduser("~/YOLOv8-DeepSORT-Object-Tracking/ultralytics/yolo/v8/detect/deep_sort_pytorch/deep_sort/sort")
+linux_path = os.path.expanduser("~/KIK_projekt/ultralytics/yolo/v8/detect/deep_sort_pytorch/deep_sort/sort")
 sys.path.append(linux_path)
 import csv
 
-#sys.path.append(r"C:\Users\User\YOLOv8-DeepSORT-Object-Tracking\ultralytics\yolo\v8\detect\deep_sort_pytorch\deep_sort\sort")
-#sys.path.append("~/YOLOv8-DeepSORT-Object-Tracking/ultralytics/yolo/v8/detect/deep_sort_pytorch/deep_sort/sort")
-
 from globals import Globals
+import pandas as pd
+import matplotlib.pyplot as plt
 
 
 palette = (2 ** 11 - 1, 2 ** 15 - 1, 2 ** 20 - 1)
@@ -40,19 +38,16 @@ data_deque = {}
 
 deepsort = None
 
-###########################
 global_instance = Globals()
-###########################
 
 def init_tracker():
 
-    #######################################
-    with open('results_TEST.csv', 'a', newline='') as csvfile:
+    
+    with open('per_frame.csv', 'a', newline='') as csvfile:
             fieldnames = ['frame', 'people', 'bikes', 'buses', 'cars', 'trucks', 'trains']
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             writer.writerow({'frame': "Frame", 'people': "People", 'bikes': "Bikes", 'buses': "Buses", 'cars': "Cars", 'trucks': "Trucks", 'trains': "Trains"})
 
-    #######################################
 
     global deepsort
 
@@ -64,8 +59,8 @@ def init_tracker():
                             nms_max_overlap=cfg_deep.DEEPSORT.NMS_MAX_OVERLAP, max_iou_distance=cfg_deep.DEEPSORT.MAX_IOU_DISTANCE,
                             max_age=cfg_deep.DEEPSORT.MAX_AGE, n_init=cfg_deep.DEEPSORT.N_INIT, nn_budget=cfg_deep.DEEPSORT.NN_BUDGET,
                             use_cuda=True)
-##########################################################################################
-##########################################################################################
+
+
 def xyxy_to_xywh(*xyxy):
     """" Calculates the relative bounding box from absolute pixel values. """
     bbox_left = min([xyxy[0].item(), xyxy[2].item()])
@@ -187,6 +182,11 @@ def draw_boxes(img, bbox, names,object_id, identities=None, offset=(0, 0)):
         color = compute_color_for_labels(object_id[i])
         obj_name = names[object_id[i]]
         label = '{}{:d}'.format("", id) + ":"+ '%s' % (obj_name)
+
+        if id not in global_instance.vehicle_ids:
+            global_instance.vehicle_ids.append(id)
+            write_ids(id, obj_name)
+            print(global_instance.vehicle_ids)
         
         if(obj_name not in ['person', 'bike', 'bus', 'car', 'train', 'truck']):
             return None
@@ -205,6 +205,13 @@ def draw_boxes(img, bbox, names,object_id, identities=None, offset=(0, 0)):
             cv2.line(img, data_deque[id][i - 1], data_deque[id][i], color, thickness)
     return img
 ##########################################################################################
+def write_ids(id, type):
+    with open('vehicles_ids.csv', 'a', newline='') as csvfile:
+            fieldnames = ['frame', 'id', 'type']
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writerow({'frame': global_instance.global_frame, 'id': id, 'type': type})
+
+    
 
 class DetectionPredictor(BasePredictor):
 
@@ -259,14 +266,12 @@ class DetectionPredictor(BasePredictor):
             shape = orig_img[i].shape if self.webcam else orig_img.shape
             pred[:, :4] = ops.scale_boxes(img.shape[2:], pred[:, :4], shape).round()
 
-        print("iz predicta " + str(num_bikes))
-
-        global_instance.set_no_of_people(num_people)
-        global_instance.set_no_of_cars(num_cars)
-        global_instance.set_no_of_bikes(num_bikes)
-        global_instance.set_no_of_buses(num_buses)
-        global_instance.set_no_of_trucks(num_trucks)
-        global_instance.set_no_of_trains(num_trains)
+        global_instance.no_of_people=num_people
+        global_instance.no_of_cars=num_cars
+        global_instance.no_of_bikes=num_bikes
+        global_instance.no_of_buses=num_buses
+        global_instance.no_of_trucks=num_trucks
+        global_instance.no_of_trains=num_trains
 
         # Return the filtered detections and the counts of each class
         return preds
@@ -297,6 +302,11 @@ class DetectionPredictor(BasePredictor):
             global_instance.set_no_of_people(0)
             print("Nista nije detektirano u frame-u " + str(global_instance.get_global_frame()))
             return log_string
+        
+        with open('per_frame.csv', 'a', newline='') as csvfile:
+            fieldnames = ['frame', 'people', 'bikes', 'buses', 'cars', 'trucks', 'trains']
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writerow({'frame': global_instance.global_frame, 'people': global_instance.no_of_people, 'bikes': global_instance.no_of_bikes, 'buses': global_instance.no_of_buses, 'cars': global_instance.no_of_cars, 'trucks': global_instance.no_of_trucks, 'trains': global_instance.no_of_trains})
 
         det = preds[idx]
         all_outputs.append(det)
@@ -305,13 +315,13 @@ class DetectionPredictor(BasePredictor):
         for c in det[:, 5].unique():
             n = (det[:, 5] == c).sum()  # detections per class
             ##################################################################
-            global_instance.set_no_of_people(f"{n}")
+            """global_instance.set_no_of_people(f"{n}")
             check_string = f"{n} {self.model.names[int(c)]}{'s' * (n > 1)}"
             string_parts = check_string.split(' ')
             if string_parts[1] == 'person' or string_parts[1] == 'persons':
-                log_string += f"{n} {self.model.names[int(c)]}{'s' * (n > 1)}, "
+                log_string += f"{n} {self.model.names[int(c)]}{'s' * (n > 1)}, """
             ##################################################################
-            #log_string += f"{n} {self.model.names[int(c)]}{'s' * (n > 1)}, "
+            log_string += f"{n} {self.model.names[int(c)]}{'s' * (n > 1)}, "
 
         # write
         gn = torch.tensor(im0.shape)[[1, 0, 1, 0]]  # normalization gain whwh
@@ -353,29 +363,47 @@ Function that is called at the very end of execution. Analyses and plots collect
 TO DO
 """
 def analyze_and_plot():
-    #with open(csv_file, mode='r') as file:
-    #    csv_reader = csv.reader(file)
-    #    next(csv_reader)  # Skip the header row
-    #    for row in csv_reader:
-    #        csv_data.append(row)
-    # Open the CSV file and read its contents row by row
-    csv_data = []
+    df_per_frame = pd.read_csv('per_frame.csv')
+    df_vehicle_ids = pd.read_csv('vehicles_ids.csv')
 
-    with open("results_TEST.csv", mode='r') as file:
-        csv_reader = csv.reader(file)
-        for row in csv_reader:
-            csv_data.append(row)
+    print(df_per_frame)
+    print(df_vehicle_ids)
 
-    # Transpose the data
-    csv_data = np.array(csv_data).T.tolist()
+    os.remove("per_frame.csv")
+    os.remove("vehicles_ids.csv")
 
-    print("Array s ocitanim podatcima iz csv-a")
-    # Print the transposed CSV data
-    for col_index, col_data in enumerate(csv_data):
-        print(f'Column {col_index}: {col_data}')
+def process_videos(folder_path, model_name="yolov8l.pt"):
+    # List all files in the folder
+    video_files = [f for f in os.listdir(folder_path) if f.endswith('.avi')]
+    
+    if not video_files:
+        print("No video files found in the folder.")
+        return
+    
+    # Iterate through video files
+    for i, video_file in enumerate(video_files):
+        video_path = os.path.join(folder_path, video_file)
+        
+        # Build the command to run
+        command = f"python3 predict.py model={model_name} source={video_path} show=True"
+        
+        # Run the command
+        os.system(command)
+        
+        # Check if it's the last video file
+        if i == len(video_files) - 1:
+            print("THE END")
+
+
+
 
 if __name__ == "__main__":
     predict()
-    ###################
     analyze_and_plot()
-    ###################
+    folder_path = os.path.expanduser("~/KIK_project/ultralytics/yolo/v8/detect/video")
+
+    if os.path.exists(folder_path):
+        print("Directory exists.")
+        process_videos(folder_path)
+    else:
+        print("Directory does not exist.")

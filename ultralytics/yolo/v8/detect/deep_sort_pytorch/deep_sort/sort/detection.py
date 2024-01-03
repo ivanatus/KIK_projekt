@@ -2,11 +2,8 @@
 import numpy as np
 import sys
 import os
-linux_path = os.path.expanduser("~/YOLOv8-DeepSORT-Object-Tracking/ultralytics/yolo/v8/detect/deep_sort_pytorch/deep_sort/sort")
+linux_path = os.path.expanduser("~/KIK_projekt/ultralytics/yolo/v8/detect/deep_sort_pytorch/deep_sort/sort")
 sys.path.append(linux_path)
-
-#sys.path.append(r"C:\Users\User\YOLOv8-DeepSORT-Object-Tracking\ultralytics\yolo\v8\detect\deep_sort_pytorch\deep_sort\sort")
-#sys.path.append("~/YOLOv8-DeepSORT-Object-Tracking/ultralytics/yolo/v8/detect/deep_sort_pytorch/deep_sort/sort")
 
 from globals import Globals
 import csv
@@ -61,9 +58,6 @@ class Detection(object):
         ret = self.tlwh.copy()
         ret[:2] += ret[2:] / 2
         ret[2] /= ret[3]
-        
-        #self.save_movement_to_csv('results_TEST.csv', Detection.global_instance.get_global_frame(), Detection.global_instance.get_no_of_people(), Detection.global_instance.get_no_of_bikes(), Detection.global_instance.get_no_of_buses(),Detection.global_instance.get_no_of_cars(), Detection.global_instance.get_no_of_trucks(), Detection.global_instance.get_no_of_trains())
-        #self.save_movement_to_csv('result_TEST.csv')
 
         return ret
 
