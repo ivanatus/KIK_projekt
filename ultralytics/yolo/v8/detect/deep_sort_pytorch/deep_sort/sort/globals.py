@@ -15,8 +15,6 @@ class Globals:
     no_of_trucks = 0
     no_of_trains = 0
     vehicle_ids = []
-
-    print(vehicle_ids)
     
     @staticmethod
     def set_global_frame(frame):
@@ -29,7 +27,6 @@ class Globals:
     @staticmethod
     def set_no_of_people(n):
         Globals.no_of_people = n
-        #print("People " + str(Globals.no_of_people))
         
     @staticmethod
     def get_no_of_people():
@@ -38,7 +35,6 @@ class Globals:
     @staticmethod
     def set_no_of_cars(n):
         Globals.no_of_cars = n
-        #print("Cars " + str(Globals.no_of_cars))
         
     @staticmethod
     def get_no_of_cars():
@@ -47,7 +43,6 @@ class Globals:
     @staticmethod
     def set_no_of_bikes(n):
         Globals.no_of_bikes = n
-        #print("Bikes " + str(Globals.no_of_bikes))
         
     @staticmethod
     def get_no_of_bikes():
@@ -56,7 +51,6 @@ class Globals:
     @staticmethod
     def set_no_of_buses(n):
         Globals.no_of_buses = n
-        #print("Buses " + str(Globals.no_of_buses))
         
     @staticmethod
     def get_no_of_buses():
@@ -65,7 +59,6 @@ class Globals:
     @staticmethod
     def set_no_of_trucks(n):
         Globals.no_of_trucks = n
-        #print("Trucks " + str(Globals.no_of_trucks))
         
     @staticmethod
     def get_no_of_trucks():
@@ -74,7 +67,6 @@ class Globals:
     @staticmethod
     def set_no_of_trains(n):
         Globals.no_of_trains = n
-        #print("Trains " + str(Globals.no_of_trains))
         
     @staticmethod
     def get_no_of_trains():

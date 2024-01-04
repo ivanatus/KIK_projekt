@@ -1,6 +1,7 @@
 # Ultralytics YOLO 🚀, GPL-3.0 license
 
 from sre_constants import ANY_ALL
+from statistics import mean, median
 import hydra
 import torch
 import argparse
@@ -48,6 +49,10 @@ def init_tracker():
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             writer.writerow({'frame': "Frame", 'people': "People", 'bikes': "Bikes", 'buses': "Buses", 'cars': "Cars", 'trucks': "Trucks", 'trains': "Trains"})
 
+    with open('vehicles_ids.csv', 'a', newline='') as csvfile:
+            fieldnames = ['frame', 'id', 'type']
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writerow({'frame': "Frame", 'id': "ID", 'type': "Type"})
 
     global deepsort
 
@@ -153,7 +158,7 @@ def UI_box(x, img, color=None, label=None, line_thickness=None):
 
         cv2.putText(img, label, (c1[0], c1[1] - 2), 0, tl / 3, [225, 255, 255], thickness=tf, lineType=cv2.LINE_AA)
 
-#################################################################################
+
 def draw_boxes(img, bbox, names,object_id, identities=None, offset=(0, 0)):
     #cv2.line(img, line[0], line[1], (46,162,112), 3)
 
@@ -204,7 +209,7 @@ def draw_boxes(img, bbox, names,object_id, identities=None, offset=(0, 0)):
             # draw trails
             cv2.line(img, data_deque[id][i - 1], data_deque[id][i], color, thickness)
     return img
-##########################################################################################
+
 def write_ids(id, type):
     with open('vehicles_ids.csv', 'a', newline='') as csvfile:
             fieldnames = ['frame', 'id', 'type']
@@ -239,8 +244,6 @@ class DetectionPredictor(BasePredictor):
         num_trucks = 0
         num_trains = 0
 
-        # List to store filtered detections
-        filtered_preds = []
 
         for i, pred in enumerate(preds):
             for det in pred:
@@ -364,10 +367,77 @@ TO DO
 """
 def analyze_and_plot():
     df_per_frame = pd.read_csv('per_frame.csv')
-    df_vehicle_ids = pd.read_csv('vehicles_ids.csv')
 
-    print(df_per_frame)
-    print(df_vehicle_ids)
+    frames = df_per_frame["Frame"].values
+    cars = df_per_frame["Cars"].values
+    buses = df_per_frame["Buses"].values
+    trucks = df_per_frame["Trucks"].values
+
+    car_mean = mean(cars)
+    car_median = median(cars)
+    buses_mean = mean(buses)
+    buses_median = median(buses)
+    trucks_mean = mean(trucks)
+    trucks_median = median(trucks)
+
+    # Plot histogram and linechart for cars
+    plt.bar(frames, cars, width=1.0, alpha=0.7, label='Cars')
+    plt.axhline(y=car_mean, color='r', linestyle='--', label='Mean Cars')
+    plt.axhline(y=car_median, color='b', linestyle='--', label='Median Cars')
+    plt.xlabel('Frames')
+    plt.ylabel('Number of Cars')
+    plt.title('Histogram of Cars over Frames')
+    plt.legend()
+    plt.savefig("cars.png", format="png")
+    plt.show()
+
+    # Plot histogram and linechart for buses
+    plt.bar(frames, buses, width=1.0, alpha=0.7, label='Buses')
+    plt.axhline(y=buses_mean, color='r', linestyle='--', label='Mean Buses')
+    plt.axhline(y=buses_median, color='b', linestyle='--', label='Median Buses')
+    plt.xlabel('Frames')
+    plt.ylabel('Number of Buses')
+    plt.title('Histogram of Buses over Frames')
+    plt.legend()
+    plt.savefig("buses.png", format="png")
+    plt.show()
+
+    # Plot histogram and linechart for trucks
+    plt.bar(frames, trucks, width=1.0, alpha=0.7, label='Trucks')
+    plt.axhline(y=trucks_mean, color='r', linestyle='--', label='Mean Trucks')
+    plt.axhline(y=trucks_median, color='b', linestyle='--', label='Median Trucks')
+    plt.xlabel('Frames')
+    plt.ylabel('Number of Trucks')
+    plt.title('Histogram of Trucks over Frames')
+    plt.legend()
+    plt.savefig("trucks.png", format="png")
+    plt.show()
+
+    df_vehicle_ids = pd.read_csv('vehicles_ids.csv')
+    types_of_vehicles = df_vehicle_ids["Type"].values
+    cars_overall = 0
+    trucks_overall = 0
+    buses_overall = 0
+
+    for type in types_of_vehicles:
+        if type == 'car':
+            cars_overall += 1
+        elif type == 'truck':
+            trucks_overall += 1
+        elif type == 'bus':
+            buses_overall += 1
+
+
+    labels = ['Cars', 'Trucks', 'Buses']
+    sizes = [cars_overall, trucks_overall, buses_overall]
+    colors = ['red','blue', 'yellow']
+    explode = (0.1, 0, 0)
+    plt.pie(sizes, explode=explode, labels=labels, colors=colors, autopct='%1.1f%%', shadow=True, startangle=140)
+    plt.axis('equal')
+    plt.title('Overall distribution of different vehicles in the video')
+    plt.legend()
+    plt.savefig("overall.png", format="png")
+    plt.show()
 
     os.remove("per_frame.csv")
     os.remove("vehicles_ids.csv")
