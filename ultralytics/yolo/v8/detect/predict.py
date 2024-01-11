@@ -427,7 +427,7 @@ def analyze_and_plot():
         elif type == 'bus':
             buses_overall += 1
 
-
+    # Plot pie chart of distribution of vehicles
     labels = ['Cars', 'Trucks', 'Buses']
     sizes = [cars_overall, trucks_overall, buses_overall]
     colors = ['red','blue', 'yellow']
@@ -439,8 +439,8 @@ def analyze_and_plot():
     plt.savefig("overall.png", format="png")
     plt.show()
 
-    os.remove("per_frame.csv")
-    os.remove("vehicles_ids.csv")
+    #os.remove("per_frame.csv")
+    #os.remove("vehicles_ids.csv")
 
 def process_videos(folder_path, model_name="yolov8l.pt"):
     # List all files in the folder
