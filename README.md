@@ -34,10 +34,10 @@ https://drive.google.com/drive/folders/1kna8eWGrSfzaR6DtNJ8_GchGgPMv3VC8?usp=sha
 - Pokretanje koda u teminalu (command prompt-u, powershell prompt-u, anaconda promt-u...)
 
 ```
-python predict.py model=yolov8l.pt source="ime_videa.ekstenzija" show=True
+python predict.py model=yolov8l.pt show=False source=video
 ```
 ili u slučaju javljene greške
 
 ```
-python3 predict.py model=yolov8l.pt source="ime_videa.ekstenzija" show=True
+python3 predict.py model=yolov8l.pt show=False source=video
 ```
