@@ -44,12 +44,12 @@ global_instance = Globals()
 def init_tracker():
 
     
-    with open('per_frame.csv', 'a', newline='') as csvfile:
-            fieldnames = ['frame', 'people', 'bikes', 'buses', 'cars', 'trucks', 'trains']
+    with open(global_instance.filename + '_per_frame.csv', 'a', newline='') as csvfile:
+            fieldnames = ['frame', 'people', 'buses', 'cars', 'trucks',]
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-            writer.writerow({'frame': "Frame", 'people': "People", 'bikes': "Bikes", 'buses': "Buses", 'cars': "Cars", 'trucks': "Trucks", 'trains': "Trains"})
+            writer.writerow({'frame': "Frame", 'people': "People", 'buses': "Buses", 'cars': "Cars", 'trucks': "Trucks"})
 
-    with open('vehicles_ids.csv', 'a', newline='') as csvfile:
+    with open(global_instance.filename + '_vehicles_ids.csv', 'a', newline='') as csvfile:
             fieldnames = ['frame', 'id', 'type']
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             writer.writerow({'frame': "Frame", 'id': "ID", 'type': "Type"})
@@ -211,7 +211,11 @@ def draw_boxes(img, bbox, names,object_id, identities=None, offset=(0, 0)):
     return img
 
 def write_ids(id, type):
-    with open('vehicles_ids.csv', 'a', newline='') as csvfile:
+    with open(global_instance.filename + '_vehicles_ids.csv', 'a', newline='') as csvfile:
+            fieldnames = ['frame', 'id', 'type']
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writerow({'frame': global_instance.global_frame, 'id': id, 'type': type})
+    with open('overall.csv', 'a', newline='') as csvfile:
             fieldnames = ['frame', 'id', 'type']
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             writer.writerow({'frame': global_instance.global_frame, 'id': id, 'type': type})
@@ -306,10 +310,10 @@ class DetectionPredictor(BasePredictor):
             print("Nista nije detektirano u frame-u " + str(global_instance.get_global_frame()))
             return log_string
         
-        with open('per_frame.csv', 'a', newline='') as csvfile:
-            fieldnames = ['frame', 'people', 'bikes', 'buses', 'cars', 'trucks', 'trains']
+        with open(global_instance.filename + '_per_frame.csv', 'a', newline='') as csvfile:
+            fieldnames = ['frame', 'people', 'buses', 'cars', 'trucks']
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-            writer.writerow({'frame': global_instance.global_frame, 'people': global_instance.no_of_people, 'bikes': global_instance.no_of_bikes, 'buses': global_instance.no_of_buses, 'cars': global_instance.no_of_cars, 'trucks': global_instance.no_of_trucks, 'trains': global_instance.no_of_trains})
+            writer.writerow({'frame': global_instance.global_frame, 'people': global_instance.no_of_people, 'buses': global_instance.no_of_buses, 'cars': global_instance.no_of_cars, 'trucks': global_instance.no_of_trucks})
 
         det = preds[idx]
         all_outputs.append(det)
@@ -351,33 +355,64 @@ class DetectionPredictor(BasePredictor):
 
         return log_string
 
-
+""""
 @hydra.main(version_base=None, config_path=str(DEFAULT_CONFIG.parent), config_name=DEFAULT_CONFIG.name)
+def predict(cfg, filename):
+    init_tracker()
+    cfg.model = cfg.model or "yolov8n.pt"
+    cfg.imgsz = check_imgsz(cfg.imgsz, min_dim=2)  # check image size
+    #cfg.source = cfg.source if cfg.source is not None else ROOT / "assets"
+    cfg.source = filename
+    predictor = DetectionPredictor(cfg)
+    predictor()"""
+
+@hydra.main(config_path=str(DEFAULT_CONFIG.parent), config_name=DEFAULT_CONFIG.name, version_base=None)
 def predict(cfg):
     init_tracker()
     cfg.model = cfg.model or "yolov8n.pt"
     cfg.imgsz = check_imgsz(cfg.imgsz, min_dim=2)  # check image size
-    cfg.source = cfg.source if cfg.source is not None else ROOT / "assets"
-    predictor = DetectionPredictor(cfg)
-    predictor()
+    # cfg.source will be the directory containing the video files
+    source_directory = hydra.utils.to_absolute_path(cfg.source)
+    for filename in os.scandir(source_directory):
+        if filename.is_file() and filename.name.endswith('.avi'):
+            predictor = DetectionPredictor(cfg)
+            predictor(filename.path)
+            global_instance.filename = filename.name
+            global_instance.processed_files.append(global_instance.filename)
 
 """
 Function that is called at the very end of execution. Analyses and plots collected data.
 TO DO
 """
 def analyze_and_plot():
-    df_per_frame = pd.read_csv('per_frame.csv')
+    if os.path.exists(global_instance.filename + '_per_frame.csv'):
+        df_per_frame = pd.read_csv(global_instance.filename + '_per_frame.csv')
+    else:
+        df_per_frame = pd.read_csv('_per_frame.csv')
 
-    frames = df_per_frame["Frame"].values
-    cars = df_per_frame["Cars"].values
-    buses = df_per_frame["Buses"].values
-    trucks = df_per_frame["Trucks"].values
+    #frames = df_per_frame["Frame"].values
+    #cars = df_per_frame["Cars"].values
+    #buses = df_per_frame["Buses"].values
+    #trucks = df_per_frame["Trucks"].values
+
+    frames = df_per_frame.iloc[:, 0].values 
+    cars = df_per_frame.iloc[:, 3].values 
+    buses = df_per_frame.iloc[:, 2].values 
+    trucks = df_per_frame.iloc[:, 4].values 
+
+    print(frames)
+    print(cars)
+    print(buses)
+    print(trucks)
 
     car_mean = mean(cars)
+    global_instance.car_means.append(car_mean)
     car_median = median(cars)
     buses_mean = mean(buses)
+    global_instance.bus_means.append(buses_mean)
     buses_median = median(buses)
     trucks_mean = mean(trucks)
+    global_instance.truck_means.append(trucks_mean)
     trucks_median = median(trucks)
 
     # Plot histogram and linechart for cars
@@ -388,8 +423,10 @@ def analyze_and_plot():
     plt.ylabel('Number of Cars')
     plt.title('Histogram of Cars over Frames')
     plt.legend()
-    plt.savefig("cars.png", format="png")
-    plt.show()
+    print(global_instance.filename + "_cars.png")
+    plt.savefig("cars/" + global_instance.filename + "_cars.png", format="png")
+    #plt.show()
+    plt.close()
 
     # Plot histogram and linechart for buses
     plt.bar(frames, buses, width=1.0, alpha=0.7, label='Buses')
@@ -399,8 +436,10 @@ def analyze_and_plot():
     plt.ylabel('Number of Buses')
     plt.title('Histogram of Buses over Frames')
     plt.legend()
-    plt.savefig("buses.png", format="png")
-    plt.show()
+    print(global_instance.filename + "_buses.png")
+    plt.savefig("buses/" + global_instance.filename + "_buses.png", format="png")
+    #plt.show()
+    plt.close()
 
     # Plot histogram and linechart for trucks
     plt.bar(frames, trucks, width=1.0, alpha=0.7, label='Trucks')
@@ -410,11 +449,18 @@ def analyze_and_plot():
     plt.ylabel('Number of Trucks')
     plt.title('Histogram of Trucks over Frames')
     plt.legend()
-    plt.savefig("trucks.png", format="png")
-    plt.show()
+    print(global_instance.filename + "_trucks.png")
+    plt.savefig("trucks/" + global_instance.filename + "_trucks.png", format="png")
+    #plt.show()
+    plt.close()
 
-    df_vehicle_ids = pd.read_csv('vehicles_ids.csv')
-    types_of_vehicles = df_vehicle_ids["Type"].values
+    if os.path.exists(global_instance.filename + '_vehicles_ids.csv'):
+        df_vehicle_ids = pd.read_csv(global_instance.filename + '_vehicles_ids.csv')
+    else:
+        df_vehicle_ids = pd.read_csv('_vehicles_ids.csv')
+
+    #types_of_vehicles = df_vehicle_ids["Type"].values
+    types_of_vehicles = df_vehicle_ids.iloc[:, 2].values 
     cars_overall = 0
     trucks_overall = 0
     buses_overall = 0
@@ -436,44 +482,58 @@ def analyze_and_plot():
     plt.axis('equal')
     plt.title('Overall distribution of different vehicles in the video')
     plt.legend()
-    plt.savefig("overall.png", format="png")
-    plt.show()
+    plt.savefig("overall/" + global_instance.filename + "_overall.png", format="png")
+    #plt.show()
+    plt.close()
 
-    #os.remove("per_frame.csv")
-    #os.remove("vehicles_ids.csv")
+    if os.path.exists(global_instance.filename + '_per_frame.csv'):
+        os.remove(global_instance.filename + "_per_frame.csv")
+    else:
+        os.remove("_per_frame.csv")
 
-def process_videos(folder_path, model_name="yolov8l.pt"):
-    # List all files in the folder
-    video_files = [f for f in os.listdir(folder_path) if f.endswith('.avi')]
-    
-    if not video_files:
-        print("No video files found in the folder.")
-        return
-    
-    # Iterate through video files
-    for i, video_file in enumerate(video_files):
-        video_path = os.path.join(folder_path, video_file)
-        
-        # Build the command to run
-        command = f"python3 predict.py model={model_name} source={video_path} show=True"
-        
-        # Run the command
-        os.system(command)
-        
-        # Check if it's the last video file
-        if i == len(video_files) - 1:
-            print("THE END")
-
-
+    if os.path.exists(global_instance.filename + '_vehicles_ids.csv'):
+        os.remove(global_instance.filename + "_vehicles_ids.csv")
+    else:
+        os.remove("_vehicles_ids.csv")
 
 
 if __name__ == "__main__":
-    predict()
-    analyze_and_plot()
-    folder_path = os.path.expanduser("~/KIK_project/ultralytics/yolo/v8/detect/video")
+    with open('overall.csv', 'a', newline='') as csvfile:
+            fieldnames = ['frame', 'id', 'type']
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writerow({'frame': "Frame", 'id': "ID", 'type': "Type"})
 
-    if os.path.exists(folder_path):
-        print("Directory exists.")
-        process_videos(folder_path)
-    else:
-        print("Directory does not exist.")
+    predict()
+
+    for filename in global_instance.processed_files:
+        global_instance.filename = filename
+        print(f"Attempting to read file: {filename}")
+        analyze_and_plot()
+
+    df = pd.read_csv('overall.csv')
+    types = df.iloc[:, 2].values
+
+    trucks = 0
+    cars = 0
+    buses = 0
+    overall = 0
+
+    for type in types:
+        overall += 1
+        if type == 'car':
+            cars += 1
+        elif type == 'bus':
+            buses += 1
+        elif type == 'trucks':
+            buses += 1
+
+    labels = ['Cars', 'Trucks', 'Buses']
+    sizes = [cars, trucks, buses]
+    colors = ['red','blue', 'yellow']
+    explode = (0.1, 0, 0)
+    plt.pie(sizes, explode=explode, labels=labels, colors=colors, autopct='%1.1f%%', shadow=True, startangle=140)
+    plt.axis('equal')
+    plt.title('Overall distribution of different vehicles in all videos')
+    plt.legend()
+    plt.savefig("overall.png", format="png")
+    

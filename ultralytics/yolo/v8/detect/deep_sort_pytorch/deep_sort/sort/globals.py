@@ -14,7 +14,12 @@ class Globals:
     no_of_buses = 0
     no_of_trucks = 0
     no_of_trains = 0
+    filename = ""
     vehicle_ids = []
+    processed_files = []
+    car_means = []
+    bus_means = []
+    truck_means = []
     
     @staticmethod
     def set_global_frame(frame):
