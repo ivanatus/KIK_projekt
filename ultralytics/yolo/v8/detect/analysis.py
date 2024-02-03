@@ -148,6 +148,20 @@ if p_value < 0.05:
                 print("The Wilcoxon signed-rank test indicates a statistically significant difference in mean values of the number of buses and trucks across the database, with the bus group having a higher mean value.")
             else:
                 print("The Wilcoxon signed-rank test indicates a statistically significant difference in mean values of the number of buses and trucks across the database, with the trucks group having a higher mean value.")
+print('\n')
+
+print("Descriptive statistics:")
+print(f'Mean value of cars: {np.mean(car_no)}')
+print(f'Median value of cars: {np.median(car_no)}')
+print(f'Standard deviation of cars: {np.std(car_no)}')
+
+print(f'Mean value of buses: {np.mean(bus_no)}')
+print(f'Median value of buses: {np.median(bus_no)}')
+print(f'Standard deviation of buses: {np.std(bus_no)}')
+
+print(f'Mean value of trucks: {np.mean(truck_no)}')
+print(f'Median value of trucks: {np.median(truck_no)}')
+print(f'Standard deviation of trucks: {np.std(truck_no)}')
 
 
 categories = ['Cars', 'Buses', 'Trucks']
