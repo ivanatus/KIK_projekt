@@ -1,7 +1,7 @@
 # Ultralytics YOLO 🚀, GPL-3.0 license
 
 from sre_constants import ANY_ALL
-from statistics import mean, median
+from statistics import mean, median, stdev
 import hydra
 import torch
 import argparse
@@ -408,49 +408,67 @@ def analyze_and_plot():
     car_mean = mean(cars)
     global_instance.car_means.append(car_mean)
     car_median = median(cars)
+    car_std = stdev(cars)
     buses_mean = mean(buses)
     global_instance.bus_means.append(buses_mean)
     buses_median = median(buses)
+    bus_std = stdev(buses)
     trucks_mean = mean(trucks)
     global_instance.truck_means.append(trucks_mean)
     trucks_median = median(trucks)
+    truck_std = stdev(trucks)
+
 
     # Plot histogram and linechart for cars
     plt.bar(frames, cars, width=1.0, alpha=0.7, label='Cars')
-    plt.axhline(y=car_mean, color='r', linestyle='--', label='Mean Cars')
+    #plt.axhline(y=car_mean, color='r', linestyle='--', label='Mean Cars')
     plt.axhline(y=car_median, color='b', linestyle='--', label='Median Cars')
     plt.xlabel('Frames')
     plt.ylabel('Number of Cars')
     plt.title('Histogram of Cars over Frames')
     plt.legend()
     print(global_instance.filename + "_cars.png")
-    plt.savefig("cars/" + global_instance.filename + "_cars.png", format="png")
+    plt.savefig("histograms/cars/" + global_instance.filename + "_cars.png", format="png")
     #plt.show()
     plt.close()
 
     # Plot histogram and linechart for buses
     plt.bar(frames, buses, width=1.0, alpha=0.7, label='Buses')
-    plt.axhline(y=buses_mean, color='r', linestyle='--', label='Mean Buses')
+    #plt.axhline(y=buses_mean, color='r', linestyle='--', label='Mean Buses')
     plt.axhline(y=buses_median, color='b', linestyle='--', label='Median Buses')
     plt.xlabel('Frames')
     plt.ylabel('Number of Buses')
     plt.title('Histogram of Buses over Frames')
     plt.legend()
     print(global_instance.filename + "_buses.png")
-    plt.savefig("buses/" + global_instance.filename + "_buses.png", format="png")
+    plt.savefig("histograms/buses/" + global_instance.filename + "_buses.png", format="png")
     #plt.show()
     plt.close()
 
     # Plot histogram and linechart for trucks
     plt.bar(frames, trucks, width=1.0, alpha=0.7, label='Trucks')
-    plt.axhline(y=trucks_mean, color='r', linestyle='--', label='Mean Trucks')
+    #plt.axhline(y=trucks_mean, color='r', linestyle='--', label='Mean Trucks')
     plt.axhline(y=trucks_median, color='b', linestyle='--', label='Median Trucks')
     plt.xlabel('Frames')
     plt.ylabel('Number of Trucks')
     plt.title('Histogram of Trucks over Frames')
     plt.legend()
     print(global_instance.filename + "_trucks.png")
-    plt.savefig("trucks/" + global_instance.filename + "_trucks.png", format="png")
+    plt.savefig("histograms/trucks/" + global_instance.filename + "_trucks.png", format="png")
+    #plt.show()
+    plt.close()
+
+    # Data
+    categories = ['Cars', 'Buses', 'Trucks']
+    means = [car_mean, buses_mean, trucks_mean]
+    std_devs = [car_std, bus_std, truck_std]
+
+    # Plotting
+    plt.bar(categories, means, yerr=std_devs, capsize=5, color=['blue', 'orange', 'green'])
+    plt.xlabel('Vehicle Types')
+    plt.ylabel('Mean Values of number of detected vehicles')
+    plt.title('Mean Values with Standard Deviation Error Bars')
+    plt.savefig("barplots/" + global_instance.filename + "_barplot.png", format="png")
     #plt.show()
     plt.close()
 
@@ -472,6 +490,11 @@ def analyze_and_plot():
             trucks_overall += 1
         elif type == 'bus':
             buses_overall += 1
+
+    with open('descriptive_stats.csv', 'a', newline='') as csvfile:
+            fieldnames = ['video', 'mean_car', 'med_car', 'std_car', 'cars_overall', 'mean_bus', 'med_bus', 'std_bus', 'bus_overall', 'mean_truck', 'med_truck', 'std_truck', 'truck_overall']
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writerow({'video': global_instance.filename, 'mean_car': car_mean, 'med_car': car_median, 'std_car': car_std, 'cars_overall': cars_overall, 'mean_bus': buses_mean, 'med_bus': buses_median, 'std_bus': bus_std, 'bus_overall': buses_overall, 'mean_truck': trucks_mean, 'med_truck': trucks_median, 'std_truck': truck_std, 'truck_overall': trucks_overall})
 
     # Plot pie chart of distribution of vehicles
     labels = ['Cars', 'Trucks', 'Buses']
@@ -502,6 +525,11 @@ if __name__ == "__main__":
             fieldnames = ['frame', 'id', 'type']
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             writer.writerow({'frame': "Frame", 'id': "ID", 'type': "Type"})
+    
+    with open('descriptive_stats.csv', 'a', newline='') as csvfile:
+            fieldnames = ['video', 'mean_car', 'med_car', 'std_car', 'cars_overall', 'mean_bus', 'med_bus', 'std_bus', 'bus_overall', 'mean_truck', 'med_truck', 'std_truck', 'truck_overall']
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writerow({'video': "video", 'mean_car': "mean_car", 'med_car': "med_car", 'std_car': "std_car", 'cars_overall': "cars_overall", 'mean_bus': "mean_bus", 'med_bus': "med_bus", 'std_bus': "std_bus",'bus_overall': "bus_overall", 'mean_truck': "mean_truck", 'med_truck': "med_truck", 'std_truck': "std_truck", 'truck_overall': "truck_overall"})
 
     predict()
 
@@ -536,4 +564,4 @@ if __name__ == "__main__":
     plt.title('Overall distribution of different vehicles in all videos')
     plt.legend()
     plt.savefig("overall.png", format="png")
-    
+    plt.close()
