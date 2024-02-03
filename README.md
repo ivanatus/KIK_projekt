@@ -15,10 +15,12 @@ cd KIK_projekt
 - Instalacija potrebnih knjižica
 ```
 pip install -e '.[dev]'
+pip install pingouin
 ```
 ili u slučaju rada na Windowsima:
 ```
 pip install -r requirements.txt
+pip install pingouin
 ```
 
 - Prelazak u daljnji direktorij
