@@ -37,9 +37,11 @@ https://drive.google.com/drive/folders/1kna8eWGrSfzaR6DtNJ8_GchGgPMv3VC8?usp=sha
 
 ```
 python predict.py model=yolov8l.pt show=False source=video
+python analysis.py
 ```
 ili u slučaju javljene greške
 
 ```
 python3 predict.py model=yolov8l.pt show=False source=video
+python3 analysis.py
 ```
