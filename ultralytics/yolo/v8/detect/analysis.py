@@ -35,6 +35,12 @@ bus_stats, bus_p_value = shapiro(bus_no)
 truck_stats, truck_p_value = shapiro(truck_no)
 
 data = pd.DataFrame({'Car': car_no, 'Bus': bus_no, 'Truck': truck_no})
+print('\n')
+
+print("Shapiro-Wilk test of normality:")
+print(f'Cars: {car_p_value}')
+print(f'Buses: {bus_p_value}')
+print(f'Trucks: {truck_p_value}\n')
 
 # Mauchly's test for sphericity
 mauchly_result = pg.sphericity(data)
@@ -69,7 +75,7 @@ if p_value < 0.05:
     print("------------------------------------------------------------")
     print("Post-HOC of ANOVA/Friedman")
     if car_p_value > 0.05 and bus_p_value > 0.05:
-        t_stasts, t_p_value = ttest_rel(car_p_value, bus_p_value)
+        t_stasts, t_p_value = ttest_rel(car_no, bus_no)
         print("Paired t-test on car and bus data:")
         print(f'T-statistic: {t_stasts}')
         print("Degrees of freedom: " + string(len(car_no) - 1))
@@ -82,7 +88,7 @@ if p_value < 0.05:
             else:
                 print("The paired t-test suggests a statistically significant difference in mean values of number of cars and buses across the database, with bus group having higher mean value.")
     else:
-        w_stasts, w_p_value = wilcoxon(car_p_value, bus_p_value)
+        w_stasts, w_p_value = wilcoxon(car_no, bus_no)
         print("Wilcoxon Signed Rank test on car and bus data:")
         print(f'W-statistic: {w_stasts}')
         print(f'P-value: {w_p_value}')
@@ -161,7 +167,7 @@ print(f'Standard deviation of buses: {np.std(bus_no)}')
 
 print(f'Mean value of trucks: {np.mean(truck_no)}')
 print(f'Median value of trucks: {np.median(truck_no)}')
-print(f'Standard deviation of trucks: {np.std(truck_no)}')
+print(f'Standard deviation of trucks: {np.std(truck_no)}\n')
 
 
 categories = ['Cars', 'Buses', 'Trucks']

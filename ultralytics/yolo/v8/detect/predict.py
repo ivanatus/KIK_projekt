@@ -1,5 +1,6 @@
 # Ultralytics YOLO 🚀, GPL-3.0 license
 
+from re import split
 from sre_constants import ANY_ALL
 from statistics import mean, median, stdev
 import hydra
@@ -533,10 +534,12 @@ if __name__ == "__main__":
 
     predict()
 
-    for filename in global_instance.processed_files:
-        global_instance.filename = filename
-        print(f"Attempting to read file: {filename}")
+    for file_name in global_instance.processed_files:
+        global_instance.filename = file_name
+        print(f"Attempting to read file: {file_name}")
         analyze_and_plot()
+    
+
 
     df = pd.read_csv('overall.csv')
     types = df.iloc[:, 2].values
